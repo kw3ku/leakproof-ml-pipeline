@@ -10,6 +10,33 @@ To maintain absolute data integrity, this pipeline follows a strict, non-negotia
 
 [Raw Data Input]│▼[1. Train/Test Split] ───► Isolate Test Partition (20%)│▼[2. Imputation Stage] ───► Compute Median on X_train ONLY ───► Backfill Both Splits│▼[3. Statistical EDA]  ───► Pearson Correlation Matrix via X_train│▼[4. Feature Engineers] ───► Fit Yeo-Johnson on X_train ───────► Project Both Splits│▼[5. Model Benchmarking] ──► Baseline Linear Regression vs. Optimized Random Forest
 
+### 🛑 Addressing the \$500K Artificial Data Cap
+#### Headline: Removing artificially capped target ceilings eliminates structural model bias.
+
+Exploratory analysis via feature box plots revealed a severe accumulation of outlier records locked exactly at **\$500,000** for `median_house_value`. This indicates an upper-bound truncation during the census collection phase.
+
+#### Example: Filtering Truncated Points
+Allowing a regression or tree framework to train on truncated ceilings forces the algorithms to learn an artificial flat-line trend, causing major underestimation at the premium end of the spectrum. To protect model accuracy, we applied a strict filter to isolate genuine market behavior:
+
+```python
+# Filter out capped census blocks
+df_clean = df_new_numeric[df_new_numeric['median_house_value'] < 500000]
+```
+
+
+### 📊 The Transformation Proof: Visualizing Distribution Symmetry
+#### Headline: Side-by-side distribution analysis proves why parametric power transformations outperform static math operators.
+
+To find the absolute best way to normalize our skewed features, our pipeline evaluated three distinct states: Raw Data, a standard Square Root (`np.sqrt`) transformation, and the optimized Yeo-Johnson Power Transformation.
+
+#### Example: The Search for the Optimal Curve
+When looking at the plots side by side:
+1. **Raw Volume Features:** Exhibited sharp cliffs on the left with long, volatile tails trailing out to the right, creating heavy algorithmic bias.
+2. **Square Root Transformation:** While pulling the extreme values inward, it under-corrected the dataset, leaving a distinct, visible right-hand lean.
+3. **Yeo-Johnson Transformation:** Successfully re-spaced the data coordinates into a near-perfectly symmetrical Gaussian bell curve centered at zero variance. 
+
+This proves that instead of applying arbitrary math functions, utilizing an optimized power transformer guarantees our model receives perfectly balanced data distributions.
+
 
 ---
 
